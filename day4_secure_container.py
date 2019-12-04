@@ -7,10 +7,10 @@ def parse_range(input):
 
 
 def is_valid_password(password):
-    if list(password) != sorted(password):
-        return False
-    c = Counter(password)
-    return 2 in c.values()
+    return (
+        list(password) == sorted(password) and
+        2 in Counter(password).values()
+    )
 
 
 def matching_passwords(start, end):
@@ -22,5 +22,6 @@ def main():
     start, end = parse_range("359282-820401")
     print(len(list(matching_passwords(start, end))))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
