@@ -124,23 +124,19 @@ def get_program():
 
 if __name__ == "__main__":
     best_score = (-1, (-1))
+    low_phase_setting = 5
     amp_count = 5
-    for perm in itertools.permutations(range(5,10)):
-        qs = [
-            queue.Queue() for _ in range(amp_count)
-        ]
+    for perm in itertools.permutations(range(low_phase_setting,low_phase_setting + amp_count)):
+        qs = []
+        for i, p in enumerate(perm):
+            q = queue.Queue()
+            q.put(p)
+            if i == 0:
+                q.put(0)
+            qs.append(q)
         with ThreadPoolExecutor(max_workers = amp_count) as executor:
-            initial_input = 0
-            funcs = []
-            for i, p in enumerate(perm):
-                inq = qs[i]
-                outq = qs[(i + 1) % len(qs)]
-                qs[i].put(p)
-                if initial_input is not None:
-                    qs[i].put(initial_input)
-                    initial_input = None
-            for i, q in enumerate(qs):
-                executor.submit(get_program().run, q, qs[(i + 1) % len(qs)])
+            for inq, outq in zip(qs, qs[1:] + [qs[0]]):
+                executor.submit(get_program().run, inq, outq)
         score = (qs[0].queue.pop(), perm)
         if score > best_score:
             best_score = score
