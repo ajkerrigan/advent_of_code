@@ -1,10 +1,10 @@
 import itertools
 import queue
-from functools import partial
-from concurrent.futures import ThreadPoolExecutor
 from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import IntEnum
+from functools import partial
 from operator import add, mul
 from typing import Callable, Union
 
@@ -14,6 +14,7 @@ END = object()
 class Mode(IntEnum):
     POSITIONAL = 0
     IMMEDIATE = 1
+    RELATIVE = 2
 
 
 @dataclass(frozen=True)
@@ -47,12 +48,14 @@ class Program:
             6: Op(self.jump_if_false, 2, False),
             7: Op(self.lt, 2, True),
             8: Op(self.eq, 2, True),
+            9: Op(self.adjust_relative_base, 1, False),
             99: Op(END, 0, False),
         }
+        self.relative_base = 0
 
     @staticmethod
     def parse_ops(s):
-        return [int(i) for i in s.split(",")]
+        return {i: int(val) for i, val in enumerate(s.split(","))}
 
     @property
     def program(self):
@@ -77,26 +80,30 @@ class Program:
     def eq(self, first, second):
         return 1 if first == second else 0
 
+    def adjust_relative_base(self, val):
+        self.relative_base += val
+
     def exec(self, op, mode, start_pos):
         def _get_input(i, val, mode):
             if (input_mode := (mode // 10 ** i % 10)) == Mode.IMMEDIATE:
                 return val
             if input_mode == Mode.POSITIONAL:
-                return self.program[val]
+                return self.program.get(val, 0)
+            if input_mode == Mode.RELATIVE:
+                return self.program.get(self.relative_base + val, 0)
             raise ValueError(f"Unknown mode: {input_mode}")
 
         inputs = [
             _get_input(i, val, mode)
-            for i, val in enumerate(
-                self.program[start_pos + 1 : start_pos + 1 + op.input_count]
-            )
+            for i, val in enumerate(self.program[k] for k in range(start_pos + 1, start_pos + op.input_count + 1))
         ]
         # print((op, mode, start_pos, *inputs))
         result = OpResult(op.func(*inputs))
         if result.value is not None:
             if op.produces_output:
                 # print(f'Storing {result} at position {start_pos + 1 + op.input_count}')
-                self.program[self.program[start_pos + 1 + op.input_count]] = result.value
+                outkey = self.program[start_pos + 1 + op.input_count]
+                self.program[outkey] = result.value
             else:
                 self.outq.put(result.value)
         return result.jump
@@ -111,33 +118,8 @@ class Program:
             if op.func == END:
                 break
             jump = self.exec(op, mode, i)
-            i = jump or i + 1 + op.input_count + (1 if op.produces_output else 0)
+            if jump is None:
+                i = i + 1 + op.input_count + (1 if op.produces_output else 0)
+            else:
+                i = jump
         return
-
-def get_program():
-    return Program(
-                """
-3,8,1001,8,10,8,105,1,0,0,21,42,67,84,109,122,203,284,365,446,99999,3,9,1002,9,3,9,1001,9,5,9,102,4,9,9,1001,9,3,9,4,9,99,3,9,1001,9,5,9,1002,9,3,9,1001,9,4,9,102,3,9,9,101,3,9,9,4,9,99,3,9,101,5,9,9,1002,9,3,9,101,5,9,9,4,9,99,3,9,102,5,9,9,101,5,9,9,102,3,9,9,101,3,9,9,102,2,9,9,4,9,99,3,9,101,2,9,9,1002,9,3,9,4,9,99,3,9,101,2,9,9,4,9,3,9,101,1,9,9,4,9,3,9,101,1,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,101,1,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,2,9,4,9,3,9,101,1,9,9,4,9,3,9,1002,9,2,9,4,9,99,3,9,1001,9,1,9,4,9,3,9,101,2,9,9,4,9,3,9,102,2,9,9,4,9,3,9,101,1,9,9,4,9,3,9,102,2,9,9,4,9,3,9,1001,9,1,9,4,9,3,9,101,1,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,2,9,9,4,9,3,9,1002,9,2,9,4,9,99,3,9,101,2,9,9,4,9,3,9,101,2,9,9,4,9,3,9,101,2,9,9,4,9,3,9,101,1,9,9,4,9,3,9,101,1,9,9,4,9,3,9,102,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,2,9,9,4,9,3,9,1001,9,1,9,4,9,99,3,9,1001,9,1,9,4,9,3,9,101,1,9,9,4,9,3,9,102,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,1001,9,2,9,4,9,3,9,1001,9,1,9,4,9,3,9,1001,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,1002,9,2,9,4,9,3,9,102,2,9,9,4,9,99,3,9,102,2,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,2,9,9,4,9,3,9,101,2,9,9,4,9,3,9,101,1,9,9,4,9,3,9,1002,9,2,9,4,9,3,9,101,1,9,9,4,9,3,9,1001,9,2,9,4,9,3,9,102,2,9,9,4,9,3,9,101,1,9,9,4,9,99
-
-                """
-            )
-
-if __name__ == "__main__":
-    best_score = (-1, (-1))
-    low_phase_setting = 5
-    amp_count = 5
-    for perm in itertools.permutations(range(low_phase_setting,low_phase_setting + amp_count)):
-        qs = []
-        for i, p in enumerate(perm):
-            q = queue.Queue()
-            q.put(p)
-            if i == 0:
-                q.put(0)
-            qs.append(q)
-        with ThreadPoolExecutor(max_workers = amp_count) as executor:
-            for inq, outq in zip(qs, qs[1:] + [qs[0]]):
-                executor.submit(get_program().run, inq, outq)
-        score = (qs[0].queue.pop(), perm)
-        if score > best_score:
-            best_score = score
-    print(best_score)
