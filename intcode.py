@@ -103,6 +103,8 @@ class Program:
             if op.produces_output:
                 # print(f'Storing {result} at position {start_pos + 1 + op.input_count}')
                 outkey = self.program[start_pos + 1 + op.input_count]
+                outmode = mode // 10 ** op.input_count % 10
+                outkey += self.relative_base if outmode == Mode.RELATIVE else 0
                 self.program[outkey] = result.value
             else:
                 self.outq.put(result.value)

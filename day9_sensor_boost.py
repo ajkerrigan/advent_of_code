@@ -9,13 +9,14 @@ def get_day9_program():
                 """
             )
 
-def day9_part1():
+def day9(param):
     pgm = get_day9_program()
     inq, outq = Queue(), Queue()
-    inq.put(1)
+    inq.put(param)
     pgm.run(inq, outq)
     return outq.queue
 
 
 if __name__ == '__main__':
-    print(day9_part1())
+    print(day9(1))
+    print(day9(2))
