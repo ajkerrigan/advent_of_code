@@ -1,4 +1,5 @@
 import itertools
+import logging
 import queue
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
@@ -37,7 +38,7 @@ class OpResult:
 
 
 class Program:
-    def __init__(self, ops):
+    def __init__(self, ops, *, debug = False):
         self._ops = self.parse_ops(ops)
         self.opcodes = {
             1: Op(add, 2, True),
@@ -52,6 +53,8 @@ class Program:
             99: Op(END, 0, False),
         }
         self.relative_base = 0
+        if debug:
+            logging.basicConfig(level=logging.INFO)
 
     @staticmethod
     def parse_ops(s):
@@ -62,7 +65,6 @@ class Program:
         return self._ops
 
     def store(self):
-        # print(self.inputs)
         return self.inq.get()
 
     def output(self, val):
@@ -97,14 +99,14 @@ class Program:
             _get_input(i, val, mode)
             for i, val in enumerate(self.program[k] for k in range(start_pos + 1, start_pos + op.input_count + 1))
         ]
-        # print((op, mode, start_pos, *inputs))
+        logging.info(f'{op=}, {mode=}, {start_pos=}, {inputs=}')
         result = OpResult(op.func(*inputs))
         if result.value is not None:
             if op.produces_output:
-                # print(f'Storing {result} at position {start_pos + 1 + op.input_count}')
                 outkey = self.program[start_pos + 1 + op.input_count]
                 outmode = mode // 10 ** op.input_count % 10
                 outkey += self.relative_base if outmode == Mode.RELATIVE else 0
+                logging.info(f'Storing {result} at position {outkey}')
                 self.program[outkey] = result.value
             else:
                 self.outq.put(result.value)
