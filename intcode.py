@@ -86,8 +86,10 @@ class Program:
         self.relative_base += val
 
     def exec(self, op, mode, start_pos):
-        def _get_input(i, val, mode):
-            if (input_mode := (mode // 10 ** i % 10)) == Mode.IMMEDIATE:
+        modes = [int(m) for m in str(mode)]
+        def _get_input(i, val):
+            nonlocal modes
+            if (input_mode := modes.pop()) == Mode.IMMEDIATE:
                 return val
             if input_mode == Mode.POSITIONAL:
                 return self.program.get(val, 0)
@@ -96,18 +98,18 @@ class Program:
             raise ValueError(f"Unknown mode: {input_mode}")
 
         inputs = [
-            _get_input(i, val, mode)
+            _get_input(i, val)
             for i, val in enumerate(self.program[k] for k in range(start_pos + 1, start_pos + op.input_count + 1))
         ]
         logging.info(f'{op=}, {mode=}, {start_pos=}, {inputs=}')
         result = OpResult(op.func(*inputs))
         if result.value is not None:
             if op.produces_output:
-                outkey = self.program[start_pos + 1 + op.input_count]
-                outmode = mode // 10 ** op.input_count % 10
-                outkey += self.relative_base if outmode == Mode.RELATIVE else 0
-                logging.info(f'Storing {result} at position {outkey}')
-                self.program[outkey] = result.value
+                output_key = self.program[start_pos + 1 + op.input_count]
+                output_mode = modes and modes.pop() or 0
+                output_key += self.relative_base if output_mode == Mode.RELATIVE else 0
+                logging.info(f'Storing {result} at position {output_key}')
+                self.program[output_key] = result.value
             else:
                 self.outq.put(result.value)
         return result.jump
