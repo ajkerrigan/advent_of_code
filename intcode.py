@@ -16,14 +16,17 @@ class Color(IntEnum):
     BLACK = 0
     WHITE = 1
 
+
 class Mode(IntEnum):
     POSITIONAL = 0
     IMMEDIATE = 1
     RELATIVE = 2
 
+
 class ComputerBehavior(IntEnum):
     DEFAULT = 0
     PAINTING_ROBOT = 1
+
 
 @dataclass(frozen=True)
 class Op:
@@ -43,6 +46,7 @@ class OpResult:
         else:
             self.value = val
 
+
 @dataclass(frozen=True, order=True)
 class Point:
     x: int
@@ -51,10 +55,10 @@ class Point:
 
     def __iter__(self):
         yield from astuple(self)
-    
+
     def __sub__(self, other):
         return Point(*(s - o for s, o in zip(self, other)))
-    
+
     def __add__(self, other):
         return Point(*(s + o for s, o in zip(self, other)))
 
@@ -67,7 +71,7 @@ class Move(Enum):
 
 
 class Program:
-    def __init__(self, ops, *, behavior = ComputerBehavior.DEFAULT, debug = False):
+    def __init__(self, ops, *, behavior=ComputerBehavior.DEFAULT, debug=False):
         self._ops = self.parse_ops(ops)
         self.opcodes = {
             1: Op(add, 2, True),
@@ -89,7 +93,7 @@ class Program:
             self.current_position = Point(0, 0)
             self.facing = deque((Move.UP, Move.RIGHT, Move.DOWN, Move.LEFT))
             self.grid = defaultdict(Color)
-            self.grid[self.current_position] = Color.BLACK
+            self.grid[self.current_position] = Color.WHITE
 
     @staticmethod
     def parse_ops(s):
@@ -124,6 +128,7 @@ class Program:
 
     def exec(self, op, mode, start_pos):
         modes = [int(m) for m in str(mode)]
+
         def _get_input(i, val):
             nonlocal modes
             input_mode = modes and modes.pop() or Mode.POSITIONAL
@@ -137,16 +142,19 @@ class Program:
 
         inputs = [
             _get_input(i, val)
-            for i, val in enumerate(self.program[k] for k in range(start_pos + 1, start_pos + op.input_count + 1))
+            for i, val in enumerate(
+                self.program[k]
+                for k in range(start_pos + 1, start_pos + op.input_count + 1)
+            )
         ]
-        logging.info(f'{op=}, {mode=}, {start_pos=}, {inputs=}')
+        logging.info(f"{op=}, {mode=}, {start_pos=}, {inputs=}")
         result = OpResult(op.func(*inputs))
         if result.value is not None:
             if op.produces_output:
                 output_key = self.program[start_pos + 1 + op.input_count]
                 output_mode = modes and modes.pop() or 0
                 output_key += self.relative_base if output_mode == Mode.RELATIVE else 0
-                logging.info(f'Storing {result} at position {output_key}')
+                logging.info(f"Storing {result} at position {output_key}")
                 self.program[output_key] = result.value
             else:
                 self.outq.put(result.value)
@@ -166,8 +174,29 @@ class Program:
                 i = i + 1 + op.input_count + (1 if op.produces_output else 0)
             else:
                 i = jump
-            if self.behavior == ComputerBehavior.PAINTING_ROBOT and self.outq.qsize() == 2:
+            if (
+                self.behavior == ComputerBehavior.PAINTING_ROBOT
+                and self.outq.qsize() == 2
+            ):
                 self.grid[self.current_position] = Color(self.outq.get())
                 self.facing.rotate(self.outq.get() and -1 or 1)
                 self.current_position = self.current_position + self.facing[0].value
-        return
+        if self.behavior == ComputerBehavior.PAINTING_ROBOT:
+            self.print_grid()
+
+    def print_grid(self):
+        if self.behavior != ComputerBehavior.PAINTING_ROBOT:
+            raise NotImplementedError
+        ymin, ymax = min(p.y for p in self.grid), max(p.y for p in self.grid)
+        xmin, xmax = min(p.x for p in self.grid), max(p.x for p in self.grid)
+        print(
+            "\n".join(
+                "".join(
+                    "."
+                    if self.grid.get(Point(j, i), Color.BLACK) == Color.BLACK
+                    else "#"
+                    for j in range(xmin, xmax + 1)
+                )
+                for i in range(ymax, ymin - 1, -1)
+            )
+        )

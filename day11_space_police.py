@@ -1,5 +1,6 @@
-from intcode import Program, ComputerBehavior
 from queue import Queue
+
+from intcode import ComputerBehavior, Program
 
 
 def get_day11_program():
@@ -19,4 +20,4 @@ def day11():
 
 
 if __name__ == '__main__':
-    print(day11())
+    day11()
