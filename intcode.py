@@ -1,10 +1,10 @@
 import itertools
 import logging
 import queue
-from collections import deque
+from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
-from enum import IntEnum
+from dataclasses import astuple, dataclass, field
+from enum import Enum, IntEnum
 from functools import partial
 from operator import add, mul
 from typing import Callable, Union
@@ -12,11 +12,18 @@ from typing import Callable, Union
 END = object()
 
 
+class Color(IntEnum):
+    BLACK = 0
+    WHITE = 1
+
 class Mode(IntEnum):
     POSITIONAL = 0
     IMMEDIATE = 1
     RELATIVE = 2
 
+class ComputerBehavior(IntEnum):
+    DEFAULT = 0
+    PAINTING_ROBOT = 1
 
 @dataclass(frozen=True)
 class Op:
@@ -36,9 +43,31 @@ class OpResult:
         else:
             self.value = val
 
+@dataclass(frozen=True, order=True)
+class Point:
+    x: int
+    y: int
+    color: int = Color.BLACK
+
+    def __iter__(self):
+        yield from astuple(self)
+    
+    def __sub__(self, other):
+        return Point(*(s - o for s, o in zip(self, other)))
+    
+    def __add__(self, other):
+        return Point(*(s + o for s, o in zip(self, other)))
+
+
+class Move(Enum):
+    LEFT = Point(-1, 0)
+    RIGHT = Point(1, 0)
+    UP = Point(0, 1)
+    DOWN = Point(0, -1)
+
 
 class Program:
-    def __init__(self, ops, *, debug = False):
+    def __init__(self, ops, *, behavior = ComputerBehavior.DEFAULT, debug = False):
         self._ops = self.parse_ops(ops)
         self.opcodes = {
             1: Op(add, 2, True),
@@ -55,6 +84,12 @@ class Program:
         self.relative_base = 0
         if debug:
             logging.basicConfig(level=logging.INFO)
+        self.behavior = behavior
+        if behavior == ComputerBehavior.PAINTING_ROBOT:
+            self.current_position = Point(0, 0)
+            self.facing = deque((Move.UP, Move.RIGHT, Move.DOWN, Move.LEFT))
+            self.grid = defaultdict(Color)
+            self.grid[self.current_position] = Color.BLACK
 
     @staticmethod
     def parse_ops(s):
@@ -65,6 +100,8 @@ class Program:
         return self._ops
 
     def store(self):
+        if self.behavior == ComputerBehavior.PAINTING_ROBOT:
+            return self.grid.get(self.current_position, Color.BLACK)
         return self.inq.get()
 
     def output(self, val):
@@ -89,7 +126,8 @@ class Program:
         modes = [int(m) for m in str(mode)]
         def _get_input(i, val):
             nonlocal modes
-            if (input_mode := modes.pop()) == Mode.IMMEDIATE:
+            input_mode = modes and modes.pop() or Mode.POSITIONAL
+            if input_mode == Mode.IMMEDIATE:
                 return val
             if input_mode == Mode.POSITIONAL:
                 return self.program.get(val, 0)
@@ -128,4 +166,8 @@ class Program:
                 i = i + 1 + op.input_count + (1 if op.produces_output else 0)
             else:
                 i = jump
+            if self.behavior == ComputerBehavior.PAINTING_ROBOT and self.outq.qsize() == 2:
+                self.grid[self.current_position] = Color(self.outq.get())
+                self.facing.rotate(self.outq.get() and -1 or 1)
+                self.current_position = self.current_position + self.facing[0].value
         return
