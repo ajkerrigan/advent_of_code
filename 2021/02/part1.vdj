@@ -1,0 +1,19 @@
+{"sheet": "global", "col": "", "row": "fancy_chooser", "longname": "unset-option", "input": "", "keystrokes": "", "comment": ""}
+{"sheet": "", "col": "", "row": "", "longname": "open-file", "input": "input", "keystrokes": "o", "comment": ""}
+{"sheet": "input", "col": "text", "row": "", "longname": "split-col", "input": " ", "keystrokes": "Space;", "comment": "Add new columns from regex split"}
+{"sheet": "input", "col": "text_re1", "row": "", "longname": "type-int", "input": "", "keystrokes": "#", "comment": "set type of current column to int"}
+{"sheet": "input", "col": "text_re0", "row": "", "longname": "key-col", "input": "", "keystrokes": "!", "comment": "toggle current column as a key column"}
+{"sheet": "input", "col": "text_re0", "row": "", "longname": "rename-col", "input": "direction", "keystrokes": "^", "comment": "edit name of current column"}
+{"sheet": "input", "col": "text_re1", "row": "", "longname": "rename-col", "input": "magnitude", "keystrokes": "^", "comment": "edit name of current column"}
+{"sheet": "input", "col": "magnitude", "row": "", "longname": "addcol-expr", "input": "-magnitude if direction == 'up' else magnitude", "keystrokes": "=", "comment": "create new column from Python expression, with column names as variables"}
+{"sheet": "input", "col": "-magnitude if direction == 'up' else magnitude", "row": "", "longname": "hide-col", "input": "", "keystrokes": "-", "comment": "Hide current column"}
+{"sheet": "input", "col": "magnitude", "row": "", "longname": "addcol-expr", "input": "magnitude if direction == 'forward' else 0", "keystrokes": "=", "comment": "create new column from Python expression, with column names as variables"}
+{"sheet": "input", "col": "magnitude if direction == 'forward' else 0", "row": "", "longname": "rename-col", "input": "delta_horizontal", "keystrokes": "^", "comment": "edit name of current column"}
+{"sheet": "input", "col": "delta_horizontal", "row": "", "longname": "addcol-expr", "input": "-magnitude if direction == 'up' else magnitude if direction == 'down' else 0", "keystrokes": "=", "comment": "create new column from Python expression, with column names as variables"}
+{"sheet": "input", "col": "-magnitude if direction == 'up' else magnitude if direction == 'down' else 0", "row": "", "longname": "rename-col", "input": "depth", "keystrokes": "^", "comment": "edit name of current column"}
+{"sheet": "input", "col": "depth", "row": "", "longname": "rename-col", "input": "delta_depth", "keystrokes": "^", "comment": "edit name of current column"}
+{"sheet": "input", "col": "delta_horizontal", "row": "", "longname": "aggregate-col", "input": "sum", "keystrokes": "+", "comment": "Add aggregator to current column"}
+{"sheet": "input", "col": "delta_depth", "row": "", "longname": "aggregate-col", "input": "sum", "keystrokes": "+", "comment": "Add aggregator to current column"}
+{"sheet": "input", "col": "direction", "row": "", "longname": "key-col", "input": "", "keystrokes": "!", "comment": "toggle current column as a key column"}
+{"sheet": "input", "col": "", "row": "", "longname": "freq-keys", "input": "", "keystrokes": "gShift+F", "comment": "open Frequency Table grouped by all key columns on source sheet, with aggregations of other columns"}
+{"sheet": "input__freq", "col": "count", "row": "", "longname": "show-expr", "input": "delta_horizontal_sum * delta_depth_sum", "keystrokes": "", "comment": "create new column from Python expression, with column names as variables"}
