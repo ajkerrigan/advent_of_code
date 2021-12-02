@@ -32,8 +32,8 @@ lint day="":
     just _lint "${path}"
 
 # run the code for a day
-run day:
+run day input="input":
     #!/usr/bin/env bash
-    mod="{{year}}.$(printf %.2d {{day}})"
-    echo "Running $mod..."
-    poetry run python -m "$mod"
+    dir="{{year}}/$(printf %.2d {{day}})"
+    echo "Running $dir..."
+    poetry run python "$dir" < "$dir/{{input}}"

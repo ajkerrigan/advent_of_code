@@ -1,3 +1,4 @@
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -55,7 +56,7 @@ def pilot_the_thing(sub, steps):
     print(f"Product of coordinates: {sub.product()}")
 
 
-course = Path(resource_filename(__name__, "input")).read_text().splitlines()
+course = sys.stdin.readlines()
 print("Part 1...")
 pilot_the_thing(Sub(), course)
 
