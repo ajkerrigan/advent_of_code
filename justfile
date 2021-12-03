@@ -37,3 +37,12 @@ run day input="input":
     dir="{{year}}/$(printf %.2d {{day}})"
     echo "Running $dir..."
     poetry run python "$dir" < "$dir/{{input}}"
+
+run_vd day part:
+    #!/usr/bin/env bash
+    cd "{{year}}/$(printf %.2d {{day}})"
+    poetry run vd \
+        --visidata-dir=../../.visidata \
+        --config=/dev/null \
+        --batch \
+        --play part{{part}}.vdj

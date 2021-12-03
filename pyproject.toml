@@ -9,6 +9,7 @@ python = "^3.10"
 ptipython = "^1.0.1"
 more-itertools = "^8.12.0"
 httpie = "^2.6.0"
+visidata = {git = "https://github.com/saulpw/visidata.git", rev = "develop"}
 
 [tool.poetry.dev-dependencies]
 black = "^21.11b1"
