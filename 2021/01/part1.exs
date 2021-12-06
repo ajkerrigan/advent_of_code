@@ -1,19 +1,17 @@
-# Define an accumulator as [last_value, [list_of_increasing_values]]
-Enum.reduce(IO.stream(:stdio, :line), [0, []], fn cur, acc ->
+# Define an accumulator as {previous, count_of_increases}
+Enum.reduce(IO.stream(:stdio, :line), {0, 0}, fn cur, acc ->
   i = String.to_integer(String.trim(cur))
 
-  # Set the accumulator's first element to the current number.
-  #
-  # Prepend the current number to the list in the second element
-  # only if it is greater than the previous number.
-  case i > hd(acc) do
-    true when hd(acc) != 0 ->
-      [i, [i | List.last(acc)]]
+  {prev, increases} = acc
+
+  case i > prev do
+    true when prev != 0 ->
+      {i, increases + 1}
 
     _ ->
-      [i, List.last(acc)]
+      {i, increases}
   end
 end)
-|> List.last()
+|> elem(1)
 |> IO.inspect()
-|> (&(IO.puts("Part 1 answer: #{length(&1)}"))).()
+|> (&IO.puts("Part 1 answer: #{&1}")).()
