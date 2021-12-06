@@ -1,15 +1,14 @@
-# Define an accumulator as {previous, count_of_increases}
-Enum.reduce(IO.stream(:stdio, :line), {0, 0}, fn cur, acc ->
-  i = String.to_integer(String.trim(cur))
+IO.stream(:stdio, :line)
+|> Stream.map(fn x -> String.to_integer(String.trim(x)) end)
 
-  {prev, increases} = acc
+# Define an accumulator as {previous_number, count_of_increases}
+|> Enum.reduce({0, 0}, fn cur, acc ->
+  {prev, increase_count} = acc
 
-  case i > prev do
-    true when prev != 0 ->
-      {i, increases + 1}
-
-    _ ->
-      {i, increases}
+  if cur > prev and prev != 0 do
+    {cur, increase_count + 1}
+  else
+    {cur, increase_count}
   end
 end)
 |> elem(1)
