@@ -1,12 +1,9 @@
 defmodule Part2 do
   def advance_days(fish_counts, ndays) do
-    if ndays == 0 do
-      fish_counts
-    else
-      (tl(fish_counts) ++ [hd(fish_counts)])
-      |> List.update_at(6, &(&1 + Enum.at(fish_counts, 0)))
-      |> advance_days(ndays - 1)
-    end
+    Enum.reduce(1..ndays, fish_counts, fn _, acc ->
+      (tl(acc) ++ [hd(acc)])
+      |> List.update_at(6, &(&1 + Enum.at(acc, 0)))
+    end)
   end
 end
 
