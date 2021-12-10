@@ -13,12 +13,12 @@ def _only_one(seq):
 
 
 def get_line_output(line):
-    '''Produce a number sequence from a line of signal codes
+    """Produce a number sequence from a line of signal codes
 
     Each line's mapping of code letters to segment locations
     is unique, but we can derive it by examining all of a
     line's code sequences.
-    '''
+    """
     # Collect possible segment configurations based on
     # the number of "on" segments
     segment_count_map = defaultdict(set)

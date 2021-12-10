@@ -1,8 +1,5 @@
 import sys
 from dataclasses import dataclass
-from pathlib import Path
-
-from pkg_resources import resource_filename
 
 
 @dataclass

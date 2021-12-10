@@ -28,8 +28,6 @@ def play_bingo(drawn_numbers, boards):
                 board.marked.add(pos)
                 win = [w for w in get_winning_positions(pos) if w <= board.marked]
                 if win:
-                    print(f"we have a winner! number {number} on board {i}!")
-                    print(f"win: {sorted(win[0])}")
                     unmarked = (
                         int(k)
                         for k, v in board.numbers.items()
