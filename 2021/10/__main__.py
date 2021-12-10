@@ -27,10 +27,9 @@ Score = namedtuple("Score", ["completions", "errors"])
 
 def get_line_score(line):
     chunks = []
-    it = iter(line)
 
     # Find syntax errors
-    for ch in it:
+    for ch in line:
         if ch in pairs:
             chunks.append(ch)
         elif ch == pairs[chunks[-1]]:
@@ -46,10 +45,8 @@ def get_line_score(line):
 
 
 if __name__ == "__main__":
-    data = sys.stdin.readlines()
-    error_score = sum(get_line_score(line.strip()).errors for line in data)
-    print(f"Part 1: {error_score}")
+    scores = [get_line_score(line) for line in sys.stdin]
+    print(f"Part 1: {sum(s.errors for s in scores)}")
 
-    autocomplete_points = [get_line_score(line).completions for line in data]
-    sorted_scores = sorted(s for s in autocomplete_points if s > 0)
+    sorted_scores = sorted(s.completions for s in scores if s.completions > 0)
     print(f"Part 2: {sorted_scores[int(len(sorted_scores)/2)]}")
