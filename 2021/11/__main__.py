@@ -1,7 +1,6 @@
 import sys
-from dataclasses import dataclass, field
-
-data = [line.strip() for line in sys.stdin.readlines()]
+from dataclasses import dataclass
+from itertools import count
 
 
 @dataclass
@@ -14,19 +13,18 @@ class Octopus:
     def __hash__(self):
         return hash((self.x, self.y))
 
+
 def populate_grid(data):
-    """Build a heightmap grid mapping (x,y) coordinates to height"""
-    return {(x, y): Octopus(x, y, energy=int(col)) for y, row in enumerate(data) for x, col in enumerate(row)}
+    """Build a grid of tightly packed octopuses"""
+    return {
+        (x, y): Octopus(x, y, energy=int(col))
+        for y, row in enumerate(data)
+        for x, col in enumerate(row)
+    }
 
-
-grid = populate_grid(data)
 
 def get_neighbors(grid, octo):
-    """Helper to get neighbor coordinates for a given point
-
-    Note: These coordinates are not guaranteed to exist on
-    the grid
-    """
+    """Helper to get adjacent octopuses"""
     return (
         grid[n]
         for n in (
@@ -49,7 +47,9 @@ def flash(grid, flashers):
         octo.flashed = True
         for neighbor in get_neighbors(grid, octo):
             neighbor.energy += 1
-            neighbor.energy > 9 and not (neighbor.flashed or neighbor in flashers) and new_flashers.add(neighbor)
+            neighbor.energy > 9 and not (
+                neighbor.flashed or neighbor in flashers
+            ) and new_flashers.add(neighbor)
     return flashers | (new_flashers and flash(grid, new_flashers))
 
 
@@ -64,15 +64,23 @@ def step(grid):
         octo.flashed = False
     return flashed
 
-def print_grid(grid):
-    for y in range(10):
-        for x in range(10):
-            print(grid[(x, y)].energy, end='')
-        print()
-flashes = 0
-for i in range(100):
-    flashes += len(step(grid))
-    if i % 1 == 0:
-        print(f'step: {i}')
-        print_grid(grid)
-print(flashes)
+
+def part1(data):
+    grid = populate_grid(data)
+    flashes = 0
+    for i in range(100):
+        flashes += len(step(grid))
+    return flashes
+
+
+def part2(data):
+    grid = populate_grid(data)
+    for i in count(1):
+        if len(step(grid)) == len(grid):
+            return i
+
+
+if __name__ == "__main__":
+    data = [line.strip() for line in sys.stdin.readlines()]
+    print(f"Part 1 answer: {part1(data)}")
+    print(f"Part 2 answer: {part2(data)}")
