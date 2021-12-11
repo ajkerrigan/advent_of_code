@@ -11,6 +11,7 @@ class Octopus:
     flashed: bool = False
 
     def __hash__(self):
+        """Hash based on position"""
         return hash((self.x, self.y))
 
 
@@ -42,18 +43,32 @@ def get_neighbors(grid, octo):
 
 
 def flash(grid, flashers):
+    """Flash an octopus
+
+    - Add energy to all neighbors
+    - If neighbor energy goes above 9, they flash also
+    - Nobody can flash more than once per step
+    """
     new_flashers = set()
     for octo in flashers:
         octo.flashed = True
         for neighbor in get_neighbors(grid, octo):
             neighbor.energy += 1
-            neighbor.energy > 9 and not (
-                neighbor.flashed or neighbor in flashers
-            ) and new_flashers.add(neighbor)
+            if neighbor.energy > 9 and not (neighbor.flashed or neighbor in flashers):
+                new_flashers.add(neighbor)
     return flashers | (new_flashers and flash(grid, new_flashers))
 
 
 def step(grid):
+    """Run one step of octopus flash dance:
+
+    - Everybody gets a hit of energy
+    - Flash if energy > 9
+    - Reset all tired flashers to 0
+
+    Return the set of all octopuses who flashed
+    during this step.
+    """
     flashers = set()
     for octo in grid.values():
         octo.energy += 1
@@ -67,17 +82,12 @@ def step(grid):
 
 def part1(data):
     grid = populate_grid(data)
-    flashes = 0
-    for i in range(100):
-        flashes += len(step(grid))
-    return flashes
+    return sum(len(step(grid)) for _ in range(100))
 
 
 def part2(data):
     grid = populate_grid(data)
-    for i in count(1):
-        if len(step(grid)) == len(grid):
-            return i
+    return next(i for i in count(1) if len(step(grid)) == len(grid))
 
 
 if __name__ == "__main__":
