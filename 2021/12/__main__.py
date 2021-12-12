@@ -1,5 +1,4 @@
 import sys
-
 from collections import defaultdict
 
 graph = defaultdict(list)
@@ -8,11 +7,8 @@ for line in sys.stdin.readlines():
     graph[a].append(b)
     graph[b].append(a)
 
-paths = set()
 
-
-def walk(graph, path, source, dest, small_visited_twice):
-    small_visits_allowed = 2 if not small_visited_twice else 1
+def walk(graph, path, source, dest, small_visits_allowed):
     options = [
         node
         for node in graph[source]
@@ -23,17 +19,22 @@ def walk(graph, path, source, dest, small_visited_twice):
     ]
     for opt in options:
         if opt == dest:
-            paths.add(path + (opt,))
+            graph["paths"].add(path + (opt,))
         else:
             walk(
                 graph,
                 path + (opt,),
                 opt,
                 dest,
-                small_visited_twice or (opt.islower() and opt in path),
+                1 if opt.islower() and opt in path else small_visits_allowed,
             )
 
 
-walk(graph, ("start",), "start", "end", False)
-print("\n".join(str(p) for p in paths))
-print(len(paths))
+if __name__ == "__main__":
+    graph["paths"] = set()
+    walk(graph, ("start",), "start", "end", 1)
+    print(f"Part 1: {len(graph['paths'])}")
+
+    graph["paths"] = set()
+    walk(graph, ("start",), "start", "end", 2)
+    print(f"Part 2: {len(graph['paths'])}")
