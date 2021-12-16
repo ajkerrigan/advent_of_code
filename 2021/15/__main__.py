@@ -34,6 +34,16 @@ def shortest_path(grid):
             ]
             if possible_risk:
                 shortest_grid[point] = min(possible_risk) + risk
+
+    tweaked = True
+    while tweaked:
+        tweaked = False
+        for point, risk in sorted(shortest_grid.items(), key=lambda i: sum(i[0])):
+            possible_risk = [v for k, v in get_neighbors(shortest_grid, point)]
+            if min(possible_risk) + grid[point] < risk:
+                shortest_grid[point] = min(possible_risk) + grid[point]
+                tweaked = True
+                continue
     return shortest_grid[end]
 
 
