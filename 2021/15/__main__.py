@@ -21,20 +21,52 @@ def get_neighbors(grid, point):
     return _get_neighbors(point)
 
 
-if __name__ == "__main__":
-    grid = populate_grid(sys.stdin)
+def shortest_path(grid):
     shortest_grid = {(0, 0): 0}
     size = int(len(grid) ** (1 / 2))
     end = (size - 1, size - 1)
-    while True:
-        for point, risk in grid.items():
+    while len(shortest_grid) < len(grid):
+        for point, risk in sorted(grid.items(), key=lambda i: sum(i[0])):
             possible_risk = [
-                shortest_grid.get(p[0])
+                shortest_grid[p[0]]
                 for p in get_neighbors(grid, point)
                 if p[0] in shortest_grid
             ]
             if possible_risk:
                 shortest_grid[point] = min(possible_risk) + risk
-        if len(grid) == len(shortest_grid):
-            break
-    print(shortest_grid[end])
+    return shortest_grid[end]
+
+
+def repeat_grid(grid, n):
+    original_size = int(len(grid) ** (1 / 2))
+    risk_scores = tuple(range(1, 10))
+    grid = {
+        (original_size * i + k[0], k[1]): risk_scores[(v + i) % 9 - 1]
+        for k, v in grid.items()
+        for i in range(n)
+    }
+
+    return {
+        (k[0], original_size * i + k[1]): risk_scores[(v + i) % 9 - 1]
+        for k, v in grid.items()
+        for i in range(n)
+    }
+
+
+def visualize_grid(grid, chunklines=None):
+    size = int(len(grid) ** (1 / 2))
+    return "\n".join(
+        "".join(
+            str(grid[(x, y)])
+            + ("\n" if chunklines and (x + 1) % chunklines == 0 else "")
+            for x in range(size)
+        )
+        for y in range(size)
+    )
+
+
+if __name__ == "__main__":
+    grid = populate_grid(sys.stdin)
+    print(f"Part 1: {shortest_path(grid)}")
+    part2_grid = repeat_grid(grid, 5)
+    print(f"Part 2: {shortest_path(part2_grid)}")
