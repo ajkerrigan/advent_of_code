@@ -15,6 +15,7 @@ visidata = {git = "https://github.com/saulpw/visidata.git", rev = "develop"}
 black = "^21.11b1"
 pylint = "^2.12.1"
 flake8 = "^4.0.1"
+pre-commit = "^2.16.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

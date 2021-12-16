@@ -20,19 +20,12 @@ init day:
     fi
     [[ -s "${inputfile}" ]] || poetry run http --session aoc --download --output "${inputfile}" "${url}"
 
-_lint path:
-    # Opt-in to supporting python 3.10 syntax (structural pattern
-    # matching) in black, see also:
-    # https://github.com/psf/black/issues/2662#issuecomment-984043175
-    poetry run black {{path}} --target-version py310
-    poetry run flake8 {{path}}
-
 # format code and run basic checks (default: all of current year)
 lint day="":
     #!/usr/bin/env bash
     path="{{year}}"
     [[ -n "{{day}}" ]] && path="${path}/$(printf %.2d {{day}})"
-    just _lint "${path}"
+    git ls-files -- "${path}" | xargs poetry run pre-commit run --files
 
 # run the code for a day
 run day input="input":
