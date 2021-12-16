@@ -1,7 +1,18 @@
+import operator
 import sys
+from contextlib import suppress
 from functools import reduce
 from io import StringIO
-from operator import mul
+
+OPTYPES = {
+    0: operator.add,
+    1: operator.mul,
+    2: lambda x, y: min((x, y)),
+    3: lambda x, y: max((x, y)),
+    5: operator.gt,
+    6: operator.lt,
+    7: operator.eq,
+}
 
 
 def parse_number(buf):
@@ -11,6 +22,26 @@ def parse_number(buf):
         keep_reading = buf.read(1) == "1"
         chunks.append(buf.read(4))
     return int("".join(chunks), 2)
+
+
+def parse_operator(buf):
+    packets = []
+    with suppress(ValueError):
+        length_type = int(buf.read(1))
+        if length_type == 0:
+            subpacket_length = (int(buf.read(15), 2), "bits")
+        else:
+            subpacket_length = (int(buf.read(11), 2), "count")
+        if subpacket_length[1] == "bits":
+            sub_buf = StringIO(buf.read(subpacket_length[0]))
+            packets.extend(list(parse_packets(sub_buf)))
+        else:
+            while len(packets) < subpacket_length[0]:
+                subpacket = parse_packet(buf)
+                if not subpacket:
+                    break
+                packets.append(subpacket)
+    return packets
 
 
 def parse_packet(buf):
@@ -23,40 +54,9 @@ def parse_packet(buf):
     if packet["type"] == 4:
         packet["value"] = parse_number(buf)
     else:
-        try:
-            length_type = int(buf.read(1))
-            if length_type == 0:
-                subpacket_length = (int(buf.read(15), 2), "bits")
-            else:
-                subpacket_length = (int(buf.read(11), 2), "count")
-            packet["subpackets"] = []
-            if subpacket_length[1] == "bits":
-                sub_buf = StringIO(buf.read(subpacket_length[0]))
-                packet["subpackets"].extend(list(parse_packets(sub_buf)))
-            else:
-                while len(packet["subpackets"]) < subpacket_length[0]:
-                    subpacket = parse_packet(buf)
-                    if not subpacket:
-                        break
-                    packet["subpackets"].append(subpacket)
-        except ValueError:
-            return None
+        packet["subpackets"] = parse_operator(buf)
         nums = [p["value"] for p in packet["subpackets"]]
-        match packet["type"]:
-            case 0:
-                packet["value"] = sum(nums)
-            case 1:
-                packet["value"] = reduce(mul, nums)
-            case 2:
-                packet["value"] = min(nums)
-            case 3:
-                packet["value"] = max(nums)
-            case 5:
-                packet["value"] = 1 if nums[0] > nums[1] else 0
-            case 6:
-                packet["value"] = 1 if nums[0] < nums[1] else 0
-            case 7:
-                packet["value"] = 1 if nums[0] == nums[1] else 0
+        packet["value"] = reduce(OPTYPES[packet["type"]], nums) if nums else None
     return packet
 
 
