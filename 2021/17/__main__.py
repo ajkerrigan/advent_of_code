@@ -27,8 +27,7 @@ def fire(grid, target_bounds, velocity, visualize=False):
     v = velocity
 
     while pos[0] < max(xbound) + 1 and pos[1] > min(ybound) - 1:
-        if grid.get((pos[0], pos[1])) == "T":
-            hit = True
+        hit = grid.get((pos[0], pos[1])) == "T"
         grid[(pos[0], pos[1])] = "#"
         pos, v = step(pos, v)
     if visualize:
@@ -70,7 +69,7 @@ def interactive_fire(grid, target_bounds):
         print(f"Total hits: {len(max_heights)}")
         print(f"Current starting velocity: {velocity}")
         ch, amount = "", 1
-        while not ch and amount:
+        while not (ch and amount):
             m = re.match(
                 r"([hjklq])(\d*)$",
                 input("Tweak (h/j/k/l)[amount] (q or ctrl-c to quit): ").strip(),
@@ -92,7 +91,7 @@ def interactive_fire(grid, target_bounds):
         max_height = fire(grid.copy(), target_bounds, velocity, visualize=True)
         if max_height is not None:
             max_heights[velocity] = max_height
-    return max(v for v in max_heights.values() if v), len(max_heights)
+    return max(max_heights.values()), len(max_heights)
 
 
 def automatic_fire(grid, target_bounds):
@@ -106,7 +105,7 @@ def automatic_fire(grid, target_bounds):
             max_height = fire(grid.copy(), target_bounds, velocity)
             if max_height is not None:
                 max_heights[velocity] = max_height
-    return max(v for v in max_heights.values() if v), len(max_heights)
+    return max(max_heights.values()), len(max_heights)
 
 
 if __name__ == "__main__":
