@@ -1,16 +1,49 @@
 from __future__ import annotations
 from math import ceil
+from itertools import chain
 import sys
 from dataclasses import dataclass, field
+from contextlib import suppress
+
+@dataclass
+class Node:
+    value: int | Snailfish
+    _value: int | Snailfish | None = field(init=False, default=None)
+
+    def is_regular(self):
+        return isinstance(self.value, int)
+    def __str__(self):
+        return str(self.value)
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, val):
+        self._value = val
+    
+    @property
+    def parent(self):
+        return self.value.parent if isinstance(self.value, Snailfish) else None
+    @parent.setter
+    def parent(self, val):
+        if isinstance(self, Snailfish):
+            self.value.parent = val
 
 
 @dataclass
 class Snailfish:
-    left: int | Snailfish | None = None
-    right: int | Snailfish | None = None
+    left: int | Snailfish | None = field(init=False)
+    right: int | Snailfish | None = field(init=False)
+    value: int | None = None
     _left: int | Snailfish | None = field(init=False)
     _right: int | Snailfish | None = field(init=False)
-    parent: Snailfish | None = field(init=False)
+    node: Node | None = field(init=False)
+    parent: Snailfish | None = field(init=False, repr=False)
+
+    def is_regular(self):
+        return False
 
     @property
     def left(self):
@@ -22,92 +55,60 @@ class Snailfish:
 
     @left.setter
     def left(self, val):
-        if isinstance(val, self.__class__):
-            val.parent = self
+        val.parent = self
         self._left = val
 
     @right.setter
     def right(self, val):
-        if isinstance(val, self.__class__):
-            val.parent = self
+        val.parent = self
         self._right = val
-
 
     def __str__(self):
         return f'[{self.left},{self.right}]'
 
-    def has_children(self):
-        return isinstance(self.left, self.__class__) or isinstance(self.right, self.__class__)
+    def flatten(self):
+        flat = []
+        if self.left:
+            flat.extend(self.left.flatten())
+        if self.value:
+            flat.append(self)
+        if self.right:
+            flat.extend(self.right.flatten())
+        return flat
 
-    def add_exploded_value(self, value, side):
-        if side == 'right':
-            if isinstance(self.left, int):
-                self.left += value
-                return True
-            elif self.parent.add_exploded_value(value, side):
-                return True
-            if isinstance(self.right, int):
-                self.right += value
-                return True
-            return self.right.add_exploded_value(value, side)    
-        if isinstance(self.right, int):
-            self.right += value
-            return True
-        elif self.right.add_exploded_value(value, side):
-            return True
-        if isinstance(self.left, int):
-            self.left += value
-            return True
-        return self.left.add_exploded_value(value, side)    
+    def explode(self):
+        flat = list(self.flatten())
+        target = None
+        index = 0
+        for i, node in enumerate(flat):
+            with suppress(AttributeError):
+                if node.parent.parent.parent:
+                    target = node.parent
+                    index = i
+                    break
+        if target:
+            if index - 1 >= 0:
+                flat[index - 1].value += target.left.value
+            if index + 1 < len(flat):
+                flat[index + 1].value += target.right.value
+            target = Node(0)
+                
+                    
 
-    def explode(self, level=0):
-        exploded = None
-        if level == 3:
-            if isinstance(self.left, self.__class__) and not self.left.has_children():
-                if isinstance(self.right, int):
-                    self.right += self.left.right
-                    exploded = (self.left.left, None)
-                else:
-                    exploded = (self.right.left, self.right.right)
-                self.left = 0
-            elif isinstance(self.right, self.__class__) and not self.right.has_children():
-                if isinstance(self.left, int):
-                    self.left += self.right.left
-                    exploded = (None, self.right.right)
-                else:
-                    exploded = (self.right.left, self.right.right)
-                self.right = 0
-            return exploded
-        vals = (isinstance(self.left, self.__class__) and self.left.explode(level + 1)) or (isinstance(self.right, self.__class__) and self.right.explode(level + 1))
-        if not vals:
-            return
-        left, right = vals
-        if right:
-            if isinstance(self.right, int):
-                self.right += right
-            elif isinstance(self.left, self.__class__):
-                self.parent.add_exploded_value(right, 'right')
-            right = None
-        if left:
-            if isinstance(self.left, int):
-                self.left += left
-            else:
-                self.parent.add_exploded_value(left, 'left')
-            left = None
-        return left, right
+
 
     def split(self):
-        if isinstance(self.left, int) and self.left >= 10:
-            self.left = self.__class__(self.left // 2, ceil(self.left / 2))
+        if self.left.is_regular() and self.left.value >= 10:
+            self.left = self.__class__(self.left.value // 2, ceil(self.left.value / 2))
             return True
-        if isinstance(self.right, int) and self.right >= 10:
-            self.right = self.__class__(self.right // 2, ceil(self.right / 2))
+        if self.right.is_regular() and self.right.value >= 10:
+            self.right = self.__class__(self.right.value // 2, ceil(self.right.value / 2))
             return True
         split = False
-        if isinstance(self.left, self.__class__):
-            split = self.left.split()
-        if not split and isinstance(self.right, self.__class__):
-            split = self.right.split()
+        if not self.left.is_regular():
+            split = self.left.value.split()
+        if not split and not self.right.is_regular():
+            split = self.right.value.split()
         return split
         
 
