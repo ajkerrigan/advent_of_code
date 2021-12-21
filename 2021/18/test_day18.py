@@ -1,6 +1,7 @@
 import pytest
-from main import Snailfish
 from pkg_resources import resource_filename
+
+from main import Snailfish
 
 
 def test_roundtrip():

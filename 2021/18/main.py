@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import sys
-from contextlib import suppress
 from dataclasses import dataclass, field
+from functools import partial
 from itertools import permutations
 from math import ceil
+from operator import attrgetter
 
 
 @dataclass
@@ -23,56 +24,104 @@ class Node:
         fish.right = Node(ceil(self.value / 2))
         return fish
 
+    @property
+    def level(self):
+        return self.parent.level + 1 if self.parent else 0
+
 
 @dataclass
 class Snailfish:
     _left: Node | Snailfish | None = field(repr=False, default=None)
     _right: Node | Snailfish | None = field(repr=False, default=None)
-    parent: Snailfish | None = field(
-        init=False, repr=False, default=None, compare=False
-    )
+    parent: Snailfish | None = field(init=False, repr=False, default=None)
 
     def __post_init__(self):
-        self.__class__.left = property(self.__class__.get_left, self.__class__.set_left)
+        self.__class__.left = property(
+            partial(attrgetter("_left")),
+            partial(self.__class__.set_child, attr="_left"),
+        )
         self.__class__.right = property(
-            self.__class__.get_right, self.__class__.set_right
+            partial(attrgetter("_right")),
+            partial(self.__class__.set_child, attr="_right"),
         )
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.left},{self.right})"
 
-    def get_left(self):
-        return self._left
-
-    def get_right(self):
-        return self._right
-
-    def set_left(self, val):
-        if isinstance(val, int):
-            val = Node(val)
-        if isinstance(val, (Node, Snailfish)):
-            val.parent = self
-        self._left = val
-
-    def set_right(self, val):
-        if isinstance(val, int):
-            val = Node(val)
-        if isinstance(val, (Node, Snailfish)):
-            val.parent = self
-        self._right = val
-
     def __str__(self):
         return f"[{self.left},{self.right}]"
 
+    def __add__(self, other):
+        if self.left or self.right:
+            newfish = self.__class__()
+            newfish.left = Snailfish.parse(str(self))
+            newfish.right = Snailfish.parse(str(other))
+            newfish.reduce()
+            return newfish
+        return other
+
+    @property
+    def level(self):
+        return self.parent.level + 1 if self.parent else 0
+
+    def get_child(self, attr):
+        return getattr(self, attr)
+
+    def set_child(self, val, attr):
+        if isinstance(val, int):
+            val = Node(val)
+        if isinstance(val, (Node, Snailfish)):
+            val.parent = self
+        setattr(self, attr, val)
+
     def flatten(self):
-        flat = []
-        flat.extend(
-            self.left.flatten() if isinstance(self.left, Snailfish) else [self.left]
-        )
-        flat.extend(
-            self.right.flatten() if isinstance(self.right, Snailfish) else [self.right]
-        )
-        return flat
+        return [
+            *(self.left.flatten() if isinstance(self.left, Snailfish) else [self.left]),
+            *(
+                self.right.flatten()
+                if isinstance(self.right, Snailfish)
+                else [self.right]
+            ),
+        ]
+
+    def explode(self):
+        flat = list(self.flatten())
+        target = None
+        for i, node in enumerate(flat):
+            if node.level > 4:
+                target = node.parent
+                break
+        if target:
+            if i - 1 >= 0:
+                flat[i - 1].value += target.left.value
+            if i + 2 < len(flat):
+                flat[i + 2].value += target.right.value
+            if target.parent.left is target:
+                target.parent.left = Node(0)
+            if target.parent.right is target:
+                target.parent.right = Node(0)
+
+    def split(self):
+        if isinstance(self.left, Node) and self.left.value >= 10:
+            self.left = self.left.split()
+            return True
+        if isinstance(self.left, Snailfish) and self.left.split():
+            return True
+        if isinstance(self.right, Node) and self.right.value >= 10:
+            self.right = self.right.split()
+            return True
+        if isinstance(self.right, Snailfish) and self.right.split():
+            return True
+
+    def reduce(self):
+        while True:
+            start = str(self)
+            self.explode()
+            if str(self) != start:
+                continue
+            self.split()
+            if str(self) == start:
+                break
 
     def magnitude(self):
         left = (
@@ -90,61 +139,6 @@ class Snailfish:
             else 0
         )
         return 3 * left + 2 * right
-
-    def explode(self):
-        flat = list(self.flatten())
-        target = None
-        index = 0
-        for i, node in enumerate(flat):
-            with suppress(AttributeError):
-                if node.parent.parent.parent.parent.parent:
-                    target = node.parent
-                    index = i
-                    break
-        if target:
-            if index - 1 >= 0:
-                flat[index - 1].value += target.left.value
-            if index + 2 < len(flat):
-                flat[index + 2].value += target.right.value
-            if target.parent.left is target:
-                target.parent.left = Node(0)
-            if target.parent.right is target:
-                target.parent.right = Node(0)
-
-    def split(self):
-        if isinstance(self.left, Node) and self.left.value >= 10:
-            self.left = self.left.split()
-            return True
-        if isinstance(self.left, Snailfish):
-            return self.left.split()
-        if isinstance(self.right, Node) and self.right.value >= 10:
-            val = self.right.value
-            self.right = self.__class__()
-            self.right.left = Node(val // 2)
-            self.right.right = Node(ceil(val / 2))
-            return True
-        if isinstance(self.right, Snailfish):
-            if self.right.split():
-                return True
-
-    def __add__(self, other):
-        if self.left or self.right:
-            newfish = self.__class__()
-            newfish.left = Snailfish.parse(str(self))
-            newfish.right = Snailfish.parse(str(other))
-            newfish.reduce()
-            return newfish
-        return other
-
-    def reduce(self):
-        while True:
-            start = str(self)
-            self.explode()
-            if str(self) != start:
-                continue
-            self.split()
-            if str(self) == start:
-                break
 
     @classmethod
     def parse(cls, str_):
@@ -175,14 +169,12 @@ class Snailfish:
 
 
 if __name__ == "__main__":
-    fish = None
     data = [Snailfish.parse(line.strip()) for line in sys.stdin.readlines()]
-    fish = sum(
+    total = sum(
         data,
         start=Snailfish(),
     )
-    print(f"Final sum: {fish}")
-    print(f"Part 1: {fish.magnitude()}")
+    print(f"Part 1: {total.magnitude()}")
 
     biggest_sum = max((a + b).magnitude() for a, b in permutations(data, 2))
     print(f"Part 2: {biggest_sum}")
