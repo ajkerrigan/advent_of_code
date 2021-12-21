@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from contextlib import suppress
 from dataclasses import dataclass, field
+from itertools import permutations
 from math import ceil
 
 
@@ -15,6 +16,12 @@ class Node:
 
     def __str__(self):
         return str(self.value)
+
+    def split(self):
+        fish = Snailfish()
+        fish.left = Node(self.value // 2)
+        fish.right = Node(ceil(self.value / 2))
+        return fish
 
 
 @dataclass
@@ -33,9 +40,6 @@ class Snailfish:
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.left},{self.right})"
-
-    def is_regular(self):
-        return False
 
     def get_left(self):
         return self._left
@@ -109,14 +113,10 @@ class Snailfish:
 
     def split(self):
         if isinstance(self.left, Node) and self.left.value >= 10:
-            val = self.left.value
-            self.left = self.__class__()
-            self.left.left = Node(val // 2)
-            self.left.right = Node(ceil(val / 2))
+            self.left = self.left.split()
             return True
         if isinstance(self.left, Snailfish):
-            if self.left.split():
-                return True
+            return self.left.split()
         if isinstance(self.right, Node) and self.right.value >= 10:
             val = self.right.value
             self.right = self.__class__()
@@ -176,15 +176,13 @@ class Snailfish:
 
 if __name__ == "__main__":
     fish = None
-    # for line in sys.stdin.readlines():
-    #     newfish = Snailfish.parse(line.strip())
-    #     print(f'  {fish}')
-    #     print(f'+ {newfish}')
-    #     fish = newfish if fish is None else (fish + newfish)
-    #     print(f'= {fish}')
+    data = [Snailfish.parse(line.strip()) for line in sys.stdin.readlines()]
     fish = sum(
-        (Snailfish.parse(line.strip()) for line in sys.stdin.readlines()),
+        data,
         start=Snailfish(),
     )
     print(f"Final sum: {fish}")
-    print(fish.magnitude())
+    print(f"Part 1: {fish.magnitude()}")
+
+    biggest_sum = max((a + b).magnitude() for a, b in permutations(data, 2))
+    print(f"Part 2: {biggest_sum}")
