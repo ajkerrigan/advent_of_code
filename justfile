@@ -1,4 +1,4 @@
-year := "2021"
+year := "2022"
 base_url := "https://adventofcode.com"
 
 _default:
