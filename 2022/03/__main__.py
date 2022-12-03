@@ -22,6 +22,8 @@ def part1(data):
 
 def part2(data):
     total_priority = 0
+    # grouping logic shamelessly stolen from the grouper recipe here
+    # https://docs.python.org/3/library/itertools.html?highlight=grouper#itertools-recipes
     for group in zip(*([iter(data.splitlines())] * 3)):
         common = set.intersection(*(set(g) for g in group))
         assert len(common) == 1, "only expected one common item across elves"
