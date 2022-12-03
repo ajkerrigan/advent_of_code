@@ -21,7 +21,12 @@ def part1(data):
 
 
 def part2(data):
-    ...
+    total_priority = 0
+    for group in zip(*([iter(data.splitlines())] * 3)):
+        common = set.intersection(*(set(g) for g in group))
+        assert len(common) == 1, "only expected one common item across elves"
+        total_priority += ascii_letters.index(common.pop()) + 1
+    return total_priority
 
 
 if __name__ == "__main__":
