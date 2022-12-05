@@ -15,16 +15,16 @@ def build_initial_position(starting_stacks):
 
 
 def move_crates(stacks, moves, model9000=True):
-    new_stacks = deepcopy(stacks)
+    stacks = deepcopy(stacks)
     for move in moves:
         num_crates, move_from, move_to = (int(n) for n in re.findall(r"\d+", move))
         stay, go = (
-            new_stacks[move_from - 1][:-num_crates],
-            new_stacks[move_from - 1][-num_crates:],
+            stacks[move_from - 1][:-num_crates],
+            stacks[move_from - 1][-num_crates:],
         )
-        new_stacks[move_from - 1] = stay
-        new_stacks[move_to - 1].extend(reversed(go) if model9000 else go)
-    return new_stacks
+        stacks[move_from - 1] = stay
+        stacks[move_to - 1].extend(reversed(go) if model9000 else go)
+    return stacks
 
 
 def part1(stacks, moves):
