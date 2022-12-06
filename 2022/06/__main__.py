@@ -10,6 +10,15 @@ def find_marker(signal: str, marker_length: int) -> int:
     position of the end of that marker.
     """
     for position, chunk in enumerate(
+        # Python 3.10 brought itertools.pairwise(), replacing
+        # previous patterns like this for fetching overlapping pairs
+        # from a sequence:
+        #
+        # zip(my_list, my_list[1:])
+        # (https://docs.python.org/3/library/itertools.html?highlight=itertools#itertools.pairwise)  # noqa
+        #
+        # This makes the offset zip approach work for subsequences of arbitrary length,
+        # because zip(signal, signal[1:], signal[2:], signal[3:]) is pretty dang tedious.
         zip(*(signal[i:] for i in range(marker_length))), start=marker_length
     ):
         if len(set(chunk)) == marker_length:
