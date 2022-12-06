@@ -2,22 +2,28 @@ import logging
 import sys
 
 
-def part1(data):
-    marker_length = 4
+def find_marker(signal: str, marker_length: int) -> int:
+    """Find a sequence of unique characters in a signal
+
+    Given a character sequence, find the first occurrence
+    of `marker_length` distinct characters. Return the
+    position of the end of that marker.
+    """
     for position, chunk in enumerate(
-        zip(*(data[i:] for i in range(marker_length))), start=marker_length
+        zip(*(signal[i:] for i in range(marker_length))), start=marker_length
     ):
         if len(set(chunk)) == marker_length:
             return position
 
 
-def part2(data):
-    marker_length = 14
-    for position, chunk in enumerate(
-        zip(*(data[i:] for i in range(marker_length))), start=marker_length
-    ):
-        if len(set(chunk)) == marker_length:
-            return position
+def part1(data: str) -> int:
+    """Find a start-of-packer marker in the signal"""
+    return find_marker(data, 4)
+
+
+def part2(data: str) -> int:
+    """Find a start-of-message marker in the signal"""
+    return find_marker(data, 14)
 
 
 if __name__ == "__main__":
