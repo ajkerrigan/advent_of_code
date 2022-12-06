@@ -12,7 +12,12 @@ def part1(data):
 
 
 def part2(data):
-    ...
+    marker_length = 14
+    for position, chunk in enumerate(
+        zip(*(data[i:] for i in range(marker_length))), start=marker_length
+    ):
+        if len(set(chunk)) == marker_length:
+            return position
 
 
 if __name__ == "__main__":
