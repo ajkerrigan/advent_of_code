@@ -1,9 +1,15 @@
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
 
+from filesystem import Directory, File, FilesystemEntry
 
-def parse_term_output(data):
+
+def parse_term_output(data: str) -> list:
+    """Turn terminal output into command details
+
+    From a single stream of terminal output, build
+    a list of individual command names and output lines.
+    """
     parsed = []
     command, command_output = "", []
     for line in data.strip().splitlines():
@@ -19,47 +25,6 @@ def parse_term_output(data):
     if command:
         parsed.append((command, command_output))
     return parsed
-
-
-@dataclass
-class FilesystemEntry:
-    """A single filesystem object"""
-
-    name: str
-
-    @property
-    def type(self):
-        raise NotImplemented
-
-
-@dataclass
-class File(FilesystemEntry):
-    """A single file in a filesystem"""
-
-    size: int
-
-    @property
-    def type(self):
-        return "file"
-
-
-@dataclass
-class Directory(FilesystemEntry):
-    """A directory in a filesystem
-
-    Directories contain 0 or more children.
-    """
-
-    contents: list[FilesystemEntry] = field(default_factory=list)
-
-    @property
-    def size(self):
-        """The total size of a directory's contents."""
-        return sum(c.size for c in self.contents)
-
-    @property
-    def type(self):
-        return "directory"
 
 
 def build_filesystem(commands: list) -> dict[str, FilesystemEntry]:
