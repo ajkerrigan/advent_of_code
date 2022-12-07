@@ -1,11 +1,11 @@
 import sys
 
 
-def part1(data: str):
+def part1(data: str) -> int:
     ...
 
 
-def part2(data: str):
+def part2(data: str) -> int:
     ...
 
 
