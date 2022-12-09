@@ -21,12 +21,21 @@ def print_visits(visited, positions):
         (min(visited, key=xattr).x - 2, max(visited, key=xattr).x + 2),
         (min(visited, key=yattr).y - 2, max(visited, key=yattr).y + 2),
     )
-    marks = {pos: str(i) for i, pos in enumerate(positions)}
-    marks[Point(0, 0)] = "S"
+
+    # Visualization marks:
+    # * Number for each knot in the rope
+    # * "#" for spots the tail has visited
+    # * "S" for the start point
+    # * "." for the rest
+    marks = {
+        **{pos: str(i) for i, pos in enumerate(positions)},
+        **{pos: "#" for pos in visited},
+        Point(0, 0): "S",
+    }
     for y in range(*ybound):
         for x in range(*xbound):
             p = Point(x, y)
-            print("#" if p in visited else marks.get(p, "."), end="")
+            print(marks.get(p, "."), end="")
         print()
 
 
