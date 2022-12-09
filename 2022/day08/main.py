@@ -2,16 +2,20 @@ import sys
 
 
 def build_grid(data) -> dict:
+    """Build a dict of coordinates to values.
+
+    I _think_ I dig this more than a 2-dimensional list.
+    """
     grid = {}
     for i, row in enumerate(data.strip().splitlines()):
         for j, col in enumerate(row):
             grid[(i, j)] = int(col)
-    grid["size"] = i + 1
     return grid
 
 
 def print_visible(grid, visible):
-    size = grid["size"]
+    """Mental helper to visualize the trees we can see."""
+    size = int(len(grid) ** (1 / 2))
     for i in range(size):
         for j in range(size):
             if (i, j) in visible:
@@ -22,7 +26,7 @@ def print_visible(grid, visible):
 
 
 def count_visible(grid) -> set:
-    size = grid["size"]
+    size = int(len(grid) ** (1 / 2))
     visible = set()
     for i in range(size):
         # forward and backward
@@ -43,6 +47,35 @@ def count_visible(grid) -> set:
     return visible
 
 
+def find_view_distance(grid, coord, step):
+    val = grid[coord]
+    distance = 0
+    x, y = coord
+    dx, dy = step
+
+    while True:
+        x += dx
+        y += dy
+        new_val = grid.get((x, y))
+        if new_val is None:
+            # We've hit the edge of the map, son
+            break
+        distance += 1
+        if new_val >= val:
+            # That there's a tree
+            break
+    return distance
+
+
+def get_view_score(grid, coord):
+    views = [
+        find_view_distance(grid, coord, step)
+        for step in ((0, 1), (0, -1), (1, 0), (-1, 0))
+    ]
+    view_score = views[0] * views[1] * views[2] * views[3]
+    return view_score
+
+
 def part1(data: str) -> int:
     grid = build_grid(data)
     visible = count_visible(grid)
@@ -51,7 +84,9 @@ def part1(data: str) -> int:
 
 
 def part2(data: str) -> int:
-    ...
+    grid = build_grid(data)
+    best_view = max(get_view_score(grid, coord) for coord in grid)
+    return best_view
 
 
 if __name__ == "__main__":
