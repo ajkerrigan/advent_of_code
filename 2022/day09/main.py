@@ -1,5 +1,6 @@
 import sys
 from operator import attrgetter
+from itertools import pairwise
 
 from coordinates import Direction, Point
 
@@ -35,13 +36,22 @@ def part1(data: str) -> int:
         head += inst
         tail = tail.close_gap(head)
         visited.add(tail)
-
-    print_visits(visited)
     return len(visited)
 
 
 def part2(data: str) -> int:
-    ...
+    instructions = parse_instructions(data)
+    positions = [Point(0, 0) for _ in range(10)]
+    visited = set()
+
+    for inst in instructions:
+        positions[0] += inst
+        positions = [
+            positions[0],
+            *(p2.close_gap(p1) for p1, p2 in pairwise(positions)),
+        ]
+        visited.add(positions[-1])
+    return len(visited)
 
 
 if __name__ == "__main__":
