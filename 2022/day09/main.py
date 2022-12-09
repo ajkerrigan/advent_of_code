@@ -1,3 +1,4 @@
+import os
 import sys
 from operator import attrgetter
 from itertools import pairwise
@@ -36,6 +37,8 @@ def part1(data: str) -> int:
         head += inst
         tail = tail.close_gap(head)
         visited.add(tail)
+    if os.environ.get("AOC_VERBOSE", "").lower() in ("part1", "both"):
+        print_visits(visited)
     return len(visited)
 
 
