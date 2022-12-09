@@ -14,17 +14,19 @@ def parse_instructions(data: str) -> list:
     return instructions
 
 
-def print_visits(visited):
+def print_visits(visited, positions):
     xattr = attrgetter("x")
     yattr = attrgetter("y")
     xbound, ybound = (
         (min(visited, key=xattr).x - 2, max(visited, key=xattr).x + 2),
         (min(visited, key=yattr).y - 2, max(visited, key=yattr).y + 2),
     )
+    marks = {pos: str(i) for i, pos in enumerate(positions)}
+    marks[Point(0, 0)] = "S"
     for y in range(*ybound):
         for x in range(*xbound):
             p = Point(x, y)
-            print("S" if p == Point(0, 0) else "#" if p in visited else "-", end="")
+            print("#" if p in visited else marks.get(p, "."), end="")
         print()
 
 
@@ -38,13 +40,13 @@ def part1(data: str) -> int:
         tail = tail.close_gap(head)
         visited.add(tail)
     if os.environ.get("AOC_VERBOSE", "").lower() in ("part1", "both"):
-        print_visits(visited)
+        print_visits(visited, [head, tail])
     return len(visited)
 
 
 def part2(data: str) -> int:
     instructions = parse_instructions(data)
-    positions = [Point(0, 0) for _ in range(10)]
+    positions = [Point(0, 0)] * 10
     visited = set()
 
     for inst in instructions:
@@ -54,6 +56,8 @@ def part2(data: str) -> int:
             *(p2.close_gap(p1) for p1, p2 in pairwise(positions)),
         ]
         visited.add(positions[-1])
+    if os.environ.get("AOC_VERBOSE", "").lower() in ("part2", "both"):
+        print_visits(visited, positions)
     return len(visited)
 
 
