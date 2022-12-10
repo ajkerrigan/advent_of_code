@@ -9,8 +9,14 @@ class CPU:
     instructions: deque = field(default_factory=deque)
     instruction: str = field(init=False, repr=False, default=None)
     cycle: int = field(init=False, repr=False, default=1)
-    output_row: list = field(default_factory=list)
-    output: list = field(default_factory=list)
+
+    def load_instructions(self, lines):
+        for line in lines.splitlines():
+            match line.split():
+                case ["noop"]:
+                    self.instructions.append(Instruction())
+                case ["addx", val]:
+                    self.instructions.append(Instruction("addx", 2, int(val)))
 
     def tick(self):
         if not self.instruction:
@@ -28,18 +34,21 @@ class CPU:
             case "addx":
                 self.X += instruction.arg
 
-    def draw(self):
-        if abs((self.cycle % 40) - self.X - 1) <= 1:
-            self.output_row.append('#')
-        else:
-            self.output_row.append('.')
-        if self.cycle % 40 == 0:
+
+@dataclass
+class CRT:
+    output_row: list = field(default_factory=list)
+    output: list = field(default_factory=list)
+
+    def draw(self, cycle, sprite):
+        self.output_row.append("#" if abs((cycle % 40) - sprite - 1) <= 1 else ".")
+        if cycle % 40 == 0:
             self.output.append(self.output_row)
             self.output_row = []
 
     @property
     def message(self):
-        return '\n' +'\n'.join(''.join(row) for row in self.output)
+        return "\n" + "\n".join("".join(row) for row in self.output)
 
 
 @dataclass
@@ -51,12 +60,7 @@ class Instruction:
 
 def part1(data: str) -> int:
     cpu = CPU()
-    for line in data.splitlines():
-        match line.split():
-            case ["noop"]:
-                cpu.instructions.append(Instruction())
-            case ["addx", val]:
-                cpu.instructions.append(Instruction("addx", 2, int(val)))
+    cpu.load_instructions(data)
     signal_strengths = []
     while cpu.instructions:
         cpu.tick()
@@ -67,16 +71,12 @@ def part1(data: str) -> int:
 
 def part2(data: str) -> str:
     cpu = CPU()
-    for line in data.splitlines():
-        match line.split():
-            case ["noop"]:
-                cpu.instructions.append(Instruction())
-            case ["addx", val]:
-                cpu.instructions.append(Instruction("addx", 2, int(val)))
+    cpu.load_instructions(data)
+    crt = CRT()
     while cpu.instructions:
-        cpu.draw()
+        crt.draw(cpu.cycle, cpu.X)
         cpu.tick()
-    return cpu.message
+    return crt.message
 
 
 if __name__ == "__main__":
