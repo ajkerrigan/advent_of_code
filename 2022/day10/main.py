@@ -9,6 +9,8 @@ class CPU:
     instructions: deque = field(default_factory=deque)
     instruction: str = field(init=False, repr=False, default=None)
     cycle: int = field(init=False, repr=False, default=1)
+    output_row: list = field(default_factory=list)
+    output: list = field(default_factory=list)
 
     def tick(self):
         if not self.instruction:
@@ -25,6 +27,19 @@ class CPU:
                 pass
             case "addx":
                 self.X += instruction.arg
+
+    def draw(self):
+        if abs((self.cycle % 40) - self.X - 1) <= 1:
+            self.output_row.append('#')
+        else:
+            self.output_row.append('.')
+        if self.cycle % 40 == 0:
+            self.output.append(self.output_row)
+            self.output_row = []
+
+    @property
+    def message(self):
+        return '\n' +'\n'.join(''.join(row) for row in self.output)
 
 
 @dataclass
@@ -50,8 +65,18 @@ def part1(data: str) -> int:
     return sum(signal_strengths)
 
 
-def part2(data: str) -> int:
-    ...
+def part2(data: str) -> str:
+    cpu = CPU()
+    for line in data.splitlines():
+        match line.split():
+            case ["noop"]:
+                cpu.instructions.append(Instruction())
+            case ["addx", val]:
+                cpu.instructions.append(Instruction("addx", 2, int(val)))
+    while cpu.instructions:
+        cpu.draw()
+        cpu.tick()
+    return cpu.message
 
 
 if __name__ == "__main__":
