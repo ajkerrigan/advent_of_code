@@ -1,29 +1,23 @@
 from dataclasses import dataclass
-from enum import Enum, Flag, auto
+from enum import Enum
 from string import ascii_lowercase
 
-HEIGHTS = {**{v: k for k, v in enumerate(ascii_lowercase)}, "S": 0, "E": 25}
-
-
-class Mark(Flag):
-    S = auto()
-    E = auto()
+ELEVATIONS = {**{v: k for k, v in enumerate(ascii_lowercase)}, "S": 0, "E": 25}
 
 
 @dataclass
 class Square:
     x: int
     y: int
-    elevation: str = ""
-    mark: Mark | None = None
+    mark: str = ""
 
     @property
     def coords(self):
         return (self.x, self.y)
 
     @property
-    def height(self):
-        return HEIGHTS.get(self.elevation, 0)
+    def elevation(self):
+        return ELEVATIONS.get(self.mark, 0)
 
     def __add__(self, other):
         return Square(self.x + other.x, self.y + other.y)
