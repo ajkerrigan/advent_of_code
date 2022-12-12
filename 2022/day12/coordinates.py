@@ -18,6 +18,10 @@ class Square:
     mark: Mark | None = None
 
     @property
+    def coords(self):
+        return (self.x, self.y)
+
+    @property
     def height(self):
         return HEIGHTS.get(self.elevation, 0)
 
@@ -31,7 +35,7 @@ class Square:
         return self.x == other.x and self.y == other.y
 
     def __hash__(self):
-        return hash((self.x, self.y))
+        return hash(self.coords)
 
     def __str__(self):
         return self.elevation
