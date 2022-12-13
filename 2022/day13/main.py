@@ -1,7 +1,8 @@
 import logging
 import os
 import sys
-from itertools import zip_longest
+from itertools import pairwise, zip_longest
+from operator import mul
 
 logging.basicConfig(
     level=os.environ.get("AOC_VERBOSE") and logging.DEBUG or logging.WARNING
@@ -10,7 +11,7 @@ undefined = object()
 filler = object()
 
 
-def compare(left, right):
+def ordered(left, right):
     log = logging.getLogger(__name__)
     log.debug("comparing %r, %r", left, right)
     match left, right:
@@ -19,9 +20,9 @@ def compare(left, right):
                 return undefined
             return l < r
         case [int(l), list(r)]:
-            return compare([l], r)
+            return ordered([l], r)
         case [list(l), int(r)]:
-            return compare(l, [r])
+            return ordered(l, [r])
         case [list(l), list(r)]:
             for x, y in zip_longest(l, r, fillvalue=filler):
                 if x is filler:
@@ -29,7 +30,7 @@ def compare(left, right):
                 if y is filler:
                     return False
                 log.debug("sub-comparing %r, %r", x, y)
-                subcheck = compare(x, y)
+                subcheck = ordered(x, y)
                 if subcheck is not undefined:
                     return subcheck
             return undefined
@@ -39,13 +40,22 @@ def part1(data: str) -> int:
     properly_ordered_pairs = 0
     for i, pair in enumerate(data.split("\n\n"), start=1):
         left, right = (eval(packet) for packet in pair.splitlines())
-        if compare(left, right):
+        if ordered(left, right):
             properly_ordered_pairs += i
     return properly_ordered_pairs
 
 
 def part2(data: str) -> int:
-    ...
+    dividers = [[[2]], [[6]]]
+    packets = [eval(line) for line in data.splitlines() if line] + dividers
+    all_in_order = False
+    while not all_in_order:
+        all_in_order = True
+        for i, (left, right) in enumerate(pairwise(packets)):
+            if not ordered(left, right):
+                packets[i], packets[i + 1] = packets[i + 1], packets[i]
+                all_in_order = False
+    return mul(*(i for i, packet in enumerate(packets, start=1) if packet in dividers))
 
 
 if __name__ == "__main__":
