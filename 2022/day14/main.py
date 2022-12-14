@@ -1,14 +1,15 @@
 import logging
 import os
 import sys
-from itertools import pairwise
 from enum import StrEnum
+from itertools import pairwise
 
 logging.basicConfig(
     level=logging.DEBUG if os.environ.get("AOC_VERBOSE") else logging.WARNING
 )
 
 SOURCE_COORDS = (500, 0)
+VERBOSE = os.environ.get("AOC_VERBOSE")
 
 
 class Mark(StrEnum):
@@ -66,17 +67,37 @@ def find_resting_spot(grid, x, y):
 
 def drop_sand(grid, position):
     x, y = position
+    verbose = VERBOSE in ("part1", "both")
     while True:
         rest = find_resting_spot(grid, x, y)
-        grid[rest] = Mark.FALLING_SAND
-        if os.environ.get("AOC_VERBOSE") in ("part1", "both"):
+        if verbose:
+            grid[rest] = Mark.FALLING_SAND
             print_grid(grid)
         if void_bound(grid, *rest):
             return grid, False
         if rest == (x, y):
             grid[rest] = Mark.RESTING_SAND
             break
-        else:
+        if verbose:
+            del grid[rest]
+        x, y = rest
+    return grid, True
+
+
+def drop_sand_part2(grid, position, yfloor):
+    x, y = position
+    verbose = VERBOSE in ("part2", "both")
+    while True:
+        rest = find_resting_spot(grid, x, y)
+        if verbose:
+            grid[rest] = Mark.FALLING_SAND
+            print_grid(grid)
+        if rest == SOURCE_COORDS:
+            return grid, False
+        if rest == (x, y) or rest[1] == yfloor:
+            grid[rest] = Mark.RESTING_SAND
+            break
+        if verbose:
             del grid[rest]
         x, y = rest
     return grid, True
@@ -87,13 +108,20 @@ def part1(data: str) -> int:
     sand_accumulating = True
     while sand_accumulating:
         grid, sand_accumulating = drop_sand(grid, SOURCE_COORDS)
-    if os.environ.get("AOC_VERBOSE") in ("part1", "both"):
+    if VERBOSE in ("part1", "both"):
         print_grid(grid)
     return sum(mark == Mark.RESTING_SAND for mark in grid.values())
 
 
 def part2(data: str) -> int:
-    ...
+    grid = build_grid(data)
+    yfloor = max(list(zip(*(k for k, v in grid.items() if v == Mark.PATH)))[1]) + 1
+    sand_accumulating = True
+    while sand_accumulating:
+        grid, sand_accumulating = drop_sand_part2(grid, SOURCE_COORDS, yfloor)
+    if VERBOSE in ("part2", "both"):
+        print_grid(grid)
+    return sum(mark in (Mark.RESTING_SAND, Mark.SAND_SOURCE) for mark in grid.values())
 
 
 if __name__ == "__main__":
