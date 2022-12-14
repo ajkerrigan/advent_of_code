@@ -65,7 +65,7 @@ def find_resting_spot(grid, x, y):
     return x, y
 
 
-def drop_sand(grid, position):
+def drop_sand(grid, position, yfloor, stop_condition):
     x, y = position
     verbose = VERBOSE in ("part1", "both")
     while True:
@@ -73,26 +73,7 @@ def drop_sand(grid, position):
         if verbose:
             grid[rest] = Mark.FALLING_SAND
             print_grid(grid)
-        if void_bound(grid, *rest):
-            return grid, False
-        if rest == (x, y):
-            grid[rest] = Mark.RESTING_SAND
-            break
-        if verbose:
-            del grid[rest]
-        x, y = rest
-    return grid, True
-
-
-def drop_sand_part2(grid, position, yfloor):
-    x, y = position
-    verbose = VERBOSE in ("part2", "both")
-    while True:
-        rest = find_resting_spot(grid, x, y)
-        if verbose:
-            grid[rest] = Mark.FALLING_SAND
-            print_grid(grid)
-        if rest == SOURCE_COORDS:
+        if stop_condition(grid, *rest):
             return grid, False
         if rest == (x, y) or rest[1] == yfloor:
             grid[rest] = Mark.RESTING_SAND
@@ -105,9 +86,12 @@ def drop_sand_part2(grid, position, yfloor):
 
 def part1(data: str) -> int:
     grid = build_grid(data)
+    yfloor = max(list(zip(*(k for k, v in grid.items() if v == Mark.PATH)))[1]) + 1
     sand_accumulating = True
     while sand_accumulating:
-        grid, sand_accumulating = drop_sand(grid, SOURCE_COORDS)
+        grid, sand_accumulating = drop_sand(
+            grid, SOURCE_COORDS, yfloor, stop_condition=void_bound
+        )
     if VERBOSE in ("part1", "both"):
         print_grid(grid)
     return sum(mark == Mark.RESTING_SAND for mark in grid.values())
@@ -118,7 +102,12 @@ def part2(data: str) -> int:
     yfloor = max(list(zip(*(k for k, v in grid.items() if v == Mark.PATH)))[1]) + 1
     sand_accumulating = True
     while sand_accumulating:
-        grid, sand_accumulating = drop_sand_part2(grid, SOURCE_COORDS, yfloor)
+        grid, sand_accumulating = drop_sand(
+            grid,
+            SOURCE_COORDS,
+            yfloor,
+            stop_condition=lambda grid, *rest: rest == SOURCE_COORDS,
+        )
     if VERBOSE in ("part2", "both"):
         print_grid(grid)
     return sum(mark in (Mark.RESTING_SAND, Mark.SAND_SOURCE) for mark in grid.values())
