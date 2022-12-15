@@ -2,7 +2,9 @@ import logging
 import os
 import re
 import sys
-from itertools import product, islice
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
+
 from coordinates import Mark, Point
 
 logging.basicConfig(
@@ -34,39 +36,43 @@ def print_grid(grid):
         )
 
 
+def beacon_sweep_sensor(grid, row, sensor):
+    log = logging.getLogger("beacon_sweep_sensor")
+    log.debug("sensor: %s", sensor.coords)
+    beacon_distance = sensor.taxi_distance(sensor.buddy)
+    log.debug("beacon distance: %d", beacon_distance)
+    x_coords = (
+        x for x in range(sensor.x - beacon_distance, sensor.x + beacon_distance)
+    )
+    return {
+        (x_coord, row)
+        for x_coord in x_coords
+        if sensor.taxi_distance((x_coord, row)) <= beacon_distance
+        and not grid.get((x_coord, row))
+    }
+
+
 def beacon_sweep(grid, row):
-    sensors = [
+    sensors = (
         point
         for point in grid.values()
         if point.mark == Mark.SENSOR
         and abs(row - point.y) <= point.taxi_distance(point.buddy)
-    ]
-    log = logging.getLogger("beacon_sweep")
-    for sensor in sensors:
-        log.debug("sensor: %s", sensor.coords)
-        beacon_distance = sensor.taxi_distance(sensor.buddy)
-        log.debug("beacon distance: %d", beacon_distance)
-        x_coords = [
-            x for x in range(sensor.x - beacon_distance, sensor.x + beacon_distance)
-        ]
-        log.debug("checking %d coords: %r ...", len(x_coords), x_coords[:10])
-        for x_coord in x_coords:
-            if sensor.taxi_distance((x_coord, row)) > beacon_distance:
-                continue
-            grid.setdefault((x_coord, row), Point(x_coord, row, Mark.NO_BEACON))
-    return grid
+    )
 
-
-def sweep_row(grid, row):
-    return sum(v.mark == Mark.NO_BEACON for k, v in grid.items() if k[1] == row)
+    sweeper = partial(beacon_sweep_sensor, grid, row)
+    with ProcessPoolExecutor() as executor:
+        return set.union(*(executor.map(sweeper, sensors)))
 
 
 def part1(data: str) -> int:
     grid = build_grid(data)
-    row = 10 if len(grid) == 20 else 2_000_000
-    grid = beacon_sweep(grid, row)
-    print_grid(grid)
-    return sweep_row(grid, row)
+    is_sample = len(grid) == 20
+    row = 10 if is_sample else 2_000_000
+    if is_sample:
+        print_grid(grid)
+    no_beacons = beacon_sweep(grid, row)
+    return len(no_beacons)
 
 
 def part2(data: str) -> int:
