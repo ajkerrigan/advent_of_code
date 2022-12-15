@@ -45,7 +45,7 @@ def print_grid(grid):
     log = logging.getLogger("print_grid")
     (xmin, xmax), (ymin, ymax) = ((min(pos), max(pos) + 1) for pos in zip(*grid))
     for y in range(ymin, ymax):
-        log.debug("".join(grid.get((x, y), ".") for x in range(xmin, xmax)))
+        log.debug("".join(grid.get((x, y), Mark.AIR) for x in range(xmin, xmax)))
 
 
 def void_bound(grid, x, y):
