@@ -5,7 +5,7 @@ import sys
 from itertools import product
 
 from coordinates import Mark, Point
-from shaped_bloom_filter import BloomFilterExtended
+from probables import BloomFilter
 
 logging.basicConfig(
     level=logging.DEBUG if os.environ.get("AOC_VERBOSE") else logging.WARNING
@@ -39,7 +39,7 @@ def print_grid(grid):
 def beacon_sweep(grid, xrange, yrange):
     log = logging.getLogger("beacon_sweep")
     sensors = tuple(point for point in grid.values() if point.mark == Mark.SENSOR)
-    nopes = set()
+    nopes = BloomFilter(est_elements=len(xrange) * len(yrange), false_positive_rate=0.05)
     for sensor in sensors:
         log.debug("sweeping sensor %r", sensor)
         sensor_range = product(
@@ -53,9 +53,7 @@ def beacon_sweep(grid, xrange, yrange):
             ),
         )
         for coord in sensor_range:
-            # key = abs(hash((x if x != -1 else xrange.stop + 1, y if y != -1 else yrange.stop + 1)))
-            # if not nopes.is_member(key) and (x, y) not in grid:
-            if coord not in nopes and coord not in grid and sensor.taxi_distance(coord) <= sensor.buddy_distance:
+            if not nopes.check(coord) and coord not in grid and sensor.taxi_distance(coord) <= sensor.buddy_distance:
                 nopes.add(coord)
     return nopes
 
@@ -70,7 +68,7 @@ def part1(data: str) -> int:
     xmin = min(s.x - s.buddy_distance for s in sensors)
     xmax = max(s.x + s.buddy_distance for s in sensors)
     nopes = beacon_sweep(grid, range(xmin, xmax + 1), range(y, y + 1))
-    return len(nopes)
+    return nopes.elements_added
 
 
 def part2(data: str) -> int:
@@ -83,9 +81,12 @@ def part2(data: str) -> int:
     nopes = beacon_sweep(
         grid, range(maxval + 1), range(maxval + 1)
     )
-    possibilities = set(product(range(maxval + 1), range(maxval + 1))) - nopes - set(grid)
-    distress_beacon = possibilities.pop()
-    assert not possibilities
+    for coord in grid:
+        nopes.add(coord)
+    distress_beacon = next(
+        coord for coord in set(product(range(maxval + 1), range(maxval + 1)))
+        if not nopes.check(coord)
+    )
     return distress_beacon[0] * 4_000_000 + distress_beacon[1]
 
 
