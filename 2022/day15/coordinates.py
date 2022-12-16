@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum, StrEnum
+from functools import cache
 
 
 class Mark(StrEnum):
@@ -17,6 +18,7 @@ class Point:
     y: int
     mark: Mark = Mark.AIR
     _buddy: Point | None = field(init=False, default=None)
+    _buddy_distance: int = field(init=False, default=0)
 
     @property
     def buddy(self):
@@ -26,6 +28,13 @@ class Point:
     def buddy(self, buddy):
         self._buddy = buddy
         buddy._buddy = self
+        distance = sum(abs(x - y) for x, y in zip(iter(self), iter(buddy)))
+        self._buddy_distance = distance
+        buddy._buddy_distance = distance
+
+    @property
+    def buddy_distance(self):
+        return self._buddy_distance
 
     @property
     def coords(self):
@@ -34,6 +43,7 @@ class Point:
     def __iter__(self):
         return iter(self.coords)
 
+    @cache
     def taxi_distance(self, other):
         return sum(abs(x - y) for x, y in zip(iter(self), iter(other)))
 
