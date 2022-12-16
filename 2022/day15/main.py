@@ -5,6 +5,7 @@ import sys
 from itertools import product
 
 from coordinates import Mark, Point
+from shaped_bloom_filter import BloomFilterExtended
 
 logging.basicConfig(
     level=logging.DEBUG if os.environ.get("AOC_VERBOSE") else logging.WARNING
@@ -38,28 +39,25 @@ def print_grid(grid):
 def beacon_sweep(grid, xrange, yrange):
     log = logging.getLogger("beacon_sweep")
     sensors = tuple(point for point in grid.values() if point.mark == Mark.SENSOR)
-    possibilities = set(product(xrange, yrange))
+    nopes = set()
     for sensor in sensors:
         log.debug("sweeping sensor %r", sensor)
-        sensor_range = set(
-            product(
-                range(
-                    max(sensor.x - sensor.buddy_distance, xrange.start),
-                    min(sensor.x + sensor.buddy_distance + 1, xrange.stop),
-                ),
-                range(
-                    max(sensor.y - sensor.buddy_distance, yrange.start),
-                    min(sensor.y + sensor.buddy_distance + 1, yrange.stop),
-                ),
-            )
+        sensor_range = product(
+            range(
+                max(sensor.x - sensor.buddy_distance, xrange.start),
+                min(sensor.x + sensor.buddy_distance + 1, xrange.stop),
+            ),
+            range(
+                max(sensor.y - sensor.buddy_distance, yrange.start),
+                min(sensor.y + sensor.buddy_distance + 1, yrange.stop),
+            ),
         )
-        sweep_range = sensor_range & possibilities
-        possibilities -= {
-            coord
-            for coord in sweep_range
-            if sensor.taxi_distance(coord) <= sensor.buddy_distance
-        }
-    return possibilities
+        for coord in sensor_range:
+            # key = abs(hash((x if x != -1 else xrange.stop + 1, y if y != -1 else yrange.stop + 1)))
+            # if not nopes.is_member(key) and (x, y) not in grid:
+            if coord not in nopes and coord not in grid and sensor.taxi_distance(coord) <= sensor.buddy_distance:
+                nopes.add(coord)
+    return nopes
 
 
 def part1(data: str) -> int:
@@ -71,8 +69,8 @@ def part1(data: str) -> int:
     sensors = tuple(point for point in grid.values() if point.mark == Mark.SENSOR)
     xmin = min(s.x - s.buddy_distance for s in sensors)
     xmax = max(s.x + s.buddy_distance for s in sensors)
-    possibilities = beacon_sweep(grid, range(xmin, xmax + 1), range(y, y + 1))
-    return xmax - xmin - len(possibilities)
+    nopes = beacon_sweep(grid, range(xmin, xmax + 1), range(y, y + 1))
+    return len(nopes)
 
 
 def part2(data: str) -> int:
@@ -81,7 +79,11 @@ def part2(data: str) -> int:
     maxval = 20 if is_sample else 4_000_000
     if is_sample:
         print_grid(grid)
-    possibilities = beacon_sweep(grid, range(maxval + 1), range(maxval + 1))
+    distress_beacon = None
+    nopes = beacon_sweep(
+        grid, range(maxval + 1), range(maxval + 1)
+    )
+    possibilities = set(product(range(maxval + 1), range(maxval + 1))) - nopes - set(grid)
     distress_beacon = possibilities.pop()
     assert not possibilities
     return distress_beacon[0] * 4_000_000 + distress_beacon[1]
