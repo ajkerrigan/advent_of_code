@@ -37,6 +37,8 @@ def print_grid(grid):
 
 
 def get_sensor_coverage(grid):
+    """Merge all sensor diamonds into a single giant unholy polygon.
+    """
     sensors = [point for point in grid.values() if point.mark == Mark.SENSOR]
     return union_all(
         [
@@ -63,9 +65,14 @@ def part1(data: str) -> int:
         print_grid(grid)
 
     sensor_coverage = get_sensor_coverage(grid)
+
+    # Create a line on the target y row, which covers the full x
+    # range of sensors.
     xmin = min(get_coordinates(sensor_coverage), key=itemgetter(0))[0]
     xmax = max(get_coordinates(sensor_coverage), key=itemgetter(0))[0]
     search_space = LineString([(xmin, y), (xmax, y)])
+
+    # How many points on the line are covered by sensors?
     no_beacons = search_space & sensor_coverage
     return int(no_beacons.length)
 
@@ -78,10 +85,17 @@ def part2(data: str) -> int:
     if is_sample:
         print_grid(grid)
 
-    sensor_coverage = get_sensor_coverage(grid)
+    # I'm not actually sure this is the right/best way to do this,
+    # but it worked for sample and real input data...
+    #
+    # Take the rectangle of possible beacon locations, cut out
+    # any points that are covered by beacons, and find a representative
+    # point in whatever's left.
     search_space = Polygon([(0, 0), (0, maxval), (maxval, maxval), (maxval, 0)])
+    sensor_coverage = get_sensor_coverage(grid)
     possible_beacons = search_space - sensor_coverage
     distress_beacon = possible_beacons.representative_point()
+
     return int(distress_beacon.x) * 4_000_000 + int(distress_beacon.y)
 
 
