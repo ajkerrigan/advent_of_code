@@ -2,10 +2,10 @@ import logging
 import os
 import re
 import sys
-from itertools import product
+from operator import itemgetter
 
 from coordinates import Mark, Point
-from probables import BloomFilter
+from shapely import LineString, Polygon, get_coordinates, union_all
 
 logging.basicConfig(
     level=logging.DEBUG if os.environ.get("AOC_VERBOSE") else logging.WARNING
@@ -36,58 +36,53 @@ def print_grid(grid):
         )
 
 
-def beacon_sweep(grid, xrange, yrange):
-    log = logging.getLogger("beacon_sweep")
-    sensors = tuple(point for point in grid.values() if point.mark == Mark.SENSOR)
-    nopes = BloomFilter(est_elements=len(xrange) * len(yrange), false_positive_rate=0.05)
-    for sensor in sensors:
-        log.debug("sweeping sensor %r", sensor)
-        sensor_range = product(
-            range(
-                max(sensor.x - sensor.buddy_distance, xrange.start),
-                min(sensor.x + sensor.buddy_distance + 1, xrange.stop),
-            ),
-            range(
-                max(sensor.y - sensor.buddy_distance, yrange.start),
-                min(sensor.y + sensor.buddy_distance + 1, yrange.stop),
-            ),
-        )
-        for coord in sensor_range:
-            if not nopes.check(coord) and coord not in grid and sensor.taxi_distance(coord) <= sensor.buddy_distance:
-                nopes.add(coord)
-    return nopes
+def get_sensor_coverage(grid):
+    sensors = [point for point in grid.values() if point.mark == Mark.SENSOR]
+    return union_all(
+        [
+            Polygon(
+                [
+                    (sensor.x - sensor.buddy_distance, sensor.y),
+                    (sensor.x, sensor.y + sensor.buddy_distance),
+                    (sensor.x + sensor.buddy_distance, sensor.y),
+                    (sensor.x, sensor.y - sensor.buddy_distance),
+                ]
+            )
+            for sensor in sensors
+        ],
+        grid_size=1.0,
+    )
 
 
 def part1(data: str) -> int:
     grid = build_grid(data)
     is_sample = len(grid) == 20
     y = 10 if is_sample else 2_000_000
+
     if is_sample:
         print_grid(grid)
-    sensors = tuple(point for point in grid.values() if point.mark == Mark.SENSOR)
-    xmin = min(s.x - s.buddy_distance for s in sensors)
-    xmax = max(s.x + s.buddy_distance for s in sensors)
-    nopes = beacon_sweep(grid, range(xmin, xmax + 1), range(y, y + 1))
-    return nopes.elements_added
+
+    sensor_coverage = get_sensor_coverage(grid)
+    xmin = min(get_coordinates(sensor_coverage), key=itemgetter(0))[0]
+    xmax = max(get_coordinates(sensor_coverage), key=itemgetter(0))[0]
+    search_space = LineString([(xmin, y), (xmax, y)])
+    no_beacons = search_space & sensor_coverage
+    return int(no_beacons.length)
 
 
 def part2(data: str) -> int:
     grid = build_grid(data)
     is_sample = len(grid) == 20
     maxval = 20 if is_sample else 4_000_000
+
     if is_sample:
         print_grid(grid)
-    distress_beacon = None
-    nopes = beacon_sweep(
-        grid, range(maxval + 1), range(maxval + 1)
-    )
-    for coord in grid:
-        nopes.add(coord)
-    distress_beacon = next(
-        coord for coord in set(product(range(maxval + 1), range(maxval + 1)))
-        if not nopes.check(coord)
-    )
-    return distress_beacon[0] * 4_000_000 + distress_beacon[1]
+
+    sensor_coverage = get_sensor_coverage(grid)
+    search_space = Polygon([(0, 0), (0, maxval), (maxval, maxval), (maxval, 0)])
+    possible_beacons = search_space - sensor_coverage
+    distress_beacon = possible_beacons.representative_point()
+    return int(distress_beacon.x) * 4_000_000 + int(distress_beacon.y)
 
 
 if __name__ == "__main__":
